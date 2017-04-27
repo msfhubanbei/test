@@ -13,7 +13,7 @@
     int sum=0;
     int flag;
 
-    for(int i=2;i<=9; i++)
+    for(int i=1;i<=9; i++)
     for(m=0;m<n-i;m++)
     for(j=m,k=j+i-1; k<n;k++)
     {
@@ -45,7 +45,7 @@
  {
     int array[]={1,5,2,4,6,3,1,19,50};
     
-    int key=58;
+    int key=26;
     int tag;
     tag=find_sub_len(array, 9, key);
     printf("sub array len: %d \r\n",tag);
