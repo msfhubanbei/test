@@ -1,0 +1,19 @@
+package e2e_test
+
+import (
+	"testing"
+
+	"fmt"
+	"github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/config"
+	. "github.com/onsi/ginkgo/reporters"
+	. "github.com/onsi/gomega"
+	"os"
+)
+
+func TestE2e(t *testing.T) {
+	ReporterPath := os.Getenv("QBOXROOT") + "/qcos/test/reporters/"
+	RegisterFailHandler(ginkgo.Fail)
+	//RunSpecs(t, "Volume Suite")
+	ginkgo.RunSpecsWithDefaultAndCustomReporters(t, "E2e Suite", []ginkgo.Reporter{NewJUnitReporter(ReporterPath + fmt.Sprintf("E2e_%d.xml", config.GinkgoConfig.ParallelNode))})
+}

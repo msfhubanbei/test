@@ -1,0 +1,107 @@
+package framework
+
+import (
+	"os"
+
+	. "github.com/onsi/ginkgo"
+	admin "qiniu.com/kirkadmin/adminsdk"
+	v2 "qiniu.com/qcos/api.v2"
+	appd "qiniupkg.com/kirk/kirksdk"
+	v3 "qiniupkg.com/kirk/kirksdk"
+	"qiniupkg.com/x/log.v7"
+)
+
+// Framework supports common operations used by e2e tests;
+type Framework struct {
+	BaseName  string
+	Namespace string // a test namespace
+
+	V2Client    *v2.Client            // v2 api client
+	V3Client    v3.QcosClient         // v3 api client
+	AdminClient admin.QcosAdminClient // admin client
+	AppClient   appd.AccountClient    // app client
+}
+
+// Cfg test config setting
+var Cfg Config
+var confFile string
+
+// Config includes api.Config and some other configs like gate settings
+type Config struct {
+	V2Conf              v2.Config             `json:"v2conf"`
+	V3Conf              v3.QcosConfig         `json:"v3conf"`
+	Appconf             appd.AccountConfig    `json:"appconf"`
+	Admin               admin.QcosAdminConfig `json:"admin"`
+	Region              string                `json:"region"`
+	AppHost             string                `json:"appHost"`
+	UseGateProxy        bool                  `json:"gateProxy"`
+	GateDomain          string                `json:"gateDomain"`
+	GateURL             string                `json:"gateurl"`
+	NeedQiniuMac        bool                  `json:"needQiniuMac"`
+	WebVPN              string                `json:"webvpn"`
+	SkipAfterEachOnFail bool                  `json:"skipAfterEachOnFail"`
+}
+
+// NewFramework makes a new framework and sets up BeforeEach/AfterEach
+func NewFramework(baseName, namespace string, v2client *v2.Client, v3client v3.QcosClient, appclient appd.AccountClient, adminClient admin.QcosAdminClient) *Framework {
+	f := &Framework{
+		BaseName:    baseName,
+		Namespace:   namespace,
+		V2Client:    v2client,
+		V3Client:    v3client,
+		AdminClient: adminClient,
+		AppClient:   appclient,
+	}
+
+	BeforeEach(f.BeforeEach)
+	AfterEach(f.AfterEach)
+
+	return f
+}
+
+// NewDefaultFramework makes a default pattern framework
+func NewDefaultFramework(baseName string) *Framework {
+
+	return NewFramework(baseName, baseName, nil, nil, nil, nil)
+}
+
+// BeforeEach defines frameworks's setup work, you can add extra setup work here
+func (f *Framework) BeforeEach() {
+	By("Framework setup")
+
+	// get conf from env CONF
+	confFile = os.Getenv("CONF")
+	if len(confFile) == 0 {
+		log.Fatal("CONF env must be set")
+	}
+	log.Info("we are using conf", confFile)
+
+	Cfg = LoadConfig(confFile)
+
+	if f.V2Client == nil {
+		By("Creating a v2client")
+		f.V2Client = v2.New(Cfg.V2Conf)
+	}
+
+	if f.V3Client == nil {
+		By("Creating a v3client")
+		log.Info("cfg.v3conf", Cfg.V3Conf)
+		f.V3Client = v3.NewQcosClient(Cfg.V3Conf)
+	}
+
+	if f.AdminClient == nil {
+		By("Creating a admin client")
+		f.AdminClient = admin.NewQcosAdminClient(Cfg.Admin)
+	}
+
+	if f.AppClient == nil {
+		By("Creating a app client")
+		log.Info("Cfg.Appconf", Cfg.Appconf, Cfg.Appconf.Host)
+		f.AppClient = appd.NewAccountClient(Cfg.Appconf)
+	}
+}
+
+// AfterEach defines defines frameworks's cleanup work
+func (f *Framework) AfterEach() {
+	By("Framework cleanup")
+}
